@@ -96,5 +96,5 @@ Conseils ajoutés par ce fork, absents de l'original. Chaque conseil s'appuie su
   `web/src/root.tsx`.
 - Générer `CHECKLIST.fr.md` à partir du fichier français.
 - Adapter les liens de la page « À propos » au fork.
-- La génération statique échoue déjà sur la page `/about/` dans le projet d'origine
-  (`yarn build.ssg`) : à corriger avant le premier déploiement.
+- La page `/about/` interroge l'API GitHub pendant `yarn build.ssg` pour lister les contributeurs du
+  projet d'origine : le build a donc besoin d'un accès réseau.
