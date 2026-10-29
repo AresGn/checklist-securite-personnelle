@@ -4,6 +4,9 @@ import { qwikCity } from '@builder.io/qwik-city/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
+// Fichier de la checklist affiché par le site (voir aussi CHECKLIST_FILE dans src/data/checklist.ts).
+const checklistFile = '../personal-security-checklist.fr.yml';
+
 export default defineConfig((): UserConfig => {
   return {
     plugins: [
@@ -13,7 +16,7 @@ export default defineConfig((): UserConfig => {
       viteStaticCopy({
         targets: [
           {
-            src: '../personal-security-checklist.yml',
+            src: checklistFile,
             dest: 'public',
           },
         ],
@@ -24,7 +27,7 @@ export default defineConfig((): UserConfig => {
     },
     server: {
       fs: {
-        allow: ['.', '../personal-security-checklist.yml'],
+        allow: ['.', checklistFile],
       },
       headers: {
         'Cache-Control': 'public, max-age=0',

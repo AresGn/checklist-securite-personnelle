@@ -47,9 +47,11 @@ jobs:
         env:
           AVANT: ${{ github.event.before }}
           APRES: ${{ github.sha }}
+        # Nouvelle branche, ou ancien sommet disparu après un force-push : on vérifie tout
+        # l'historique propre au fork (les commits du projet d'origine sont exclus).
         run: |
-          if [ "$AVANT" = "0000000000000000000000000000000000000000" ]; then
-            lib/verifier-attribution.sh --commits "$APRES~1..$APRES"
-          else
+          if [ "$AVANT" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$AVANT^{commit}" 2>/dev/null; then
             lib/verifier-attribution.sh --commits "$AVANT..$APRES"
+          else
+            lib/verifier-attribution.sh --commits "$APRES"
           fi

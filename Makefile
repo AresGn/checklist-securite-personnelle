@@ -17,8 +17,9 @@ validate: .venv ## Check your checklist edits against lib/schema.json
 	$(PY) lib/validate.py
 	$(PY) lib/validate.py personal-security-checklist.fr.yml
 
-generate: .venv ## Rebuild CHECKLIST.md from the checklist YAML
+generate: .venv ## Rebuild CHECKLIST.md and CHECKLIST.fr.md from the checklist YAML
 	$(PY) lib/generate.py
+	$(PY) lib/generate.py personal-security-checklist.fr.yml CHECKLIST.fr.md
 
 web.dev: web/node_modules ## Run the website locally, with hot reloading
 	cd web && yarn dev

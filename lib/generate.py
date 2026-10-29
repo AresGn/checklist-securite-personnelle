@@ -1,4 +1,5 @@
 import os
+import sys
 import yaml
 import logging
 
@@ -7,8 +8,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-yaml_file_path = os.path.join(project_root, 'personal-security-checklist.yml')
-markdown_file_path = os.path.join(project_root, 'CHECKLIST.md')
+# Fichiers source et cible : arguments 1 et 2, sinon la version anglaise d'origine
+yaml_file_path = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(project_root, 'personal-security-checklist.yml')
+markdown_file_path = os.path.abspath(sys.argv[2]) if len(sys.argv) > 2 else os.path.join(project_root, 'CHECKLIST.md')
 
 
 def read_yaml(file_path):

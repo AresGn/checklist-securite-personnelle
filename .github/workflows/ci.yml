@@ -41,6 +41,7 @@ jobs:
             web:
               - 'web/**'
               - 'personal-security-checklist.yml'
+              - 'personal-security-checklist.fr.yml'
               - '.github/actions/setup-web/**'
               - '.github/workflows/ci.yml'
             deps:
@@ -48,6 +49,7 @@ jobs:
               - 'web/yarn.lock'
             checklist:
               - 'personal-security-checklist.yml'
+              - 'personal-security-checklist.fr.yml'
               - 'lib/**'
               - '.github/workflows/ci.yml'
             workflows:
@@ -170,7 +172,9 @@ jobs:
         run: python -m pip install -r lib/requirements.txt
 
       - name: Validate against the schema
-        run: python lib/validate.py
+        run: |
+          python lib/validate.py
+          python lib/validate.py personal-security-checklist.fr.yml
 
   # The workflows themselves must be valid, and free of known footguns
   workflow-lint:

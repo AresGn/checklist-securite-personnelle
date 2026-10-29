@@ -3,42 +3,68 @@
 # comme auteur, co-auteur ou générateur.
 #
 # Usage :
-#   lib/verifier-attribution.sh fichier.txt        vérifie un texte (message de commit, PR)
-#   lib/verifier-attribution.sh --commits A..B     vérifie messages et identités d'une plage
+#   lib/verifier-attribution.sh fichier.txt          vérifie un texte (message de commit, PR)
+#   lib/verifier-attribution.sh --commits REV...     vérifie messages et identités des commits
+#                                                    désignés (arguments de git rev-list,
+#                                                    par exemple A..B ou SHA --not --remotes)
 #
 # Les commits déjà présents dans le projet d'origine (refs/remotes/upstream/master) sont ignorés.
 #
-# Code de sortie : 0 si conforme, 1 sinon (avec la liste des lignes en cause).
+# Seules les attributions sont refusées : une simple mention d'un outil (« le conseil sur
+# ChatGPT ») ou une personne qui s'appelle Claude ou Devin restent acceptées.
+#
+# Code de sortie : 0 si conforme, 1 si une attribution est trouvée, 2 si les commits
+# n'ont pas pu être listés.
 
 set -euo pipefail
 
-# Motifs refusés dans un message (insensibles à la casse).
-TEXTE_INTERDIT='(co-authored-by:.*(claude|anthropic|copilot|cursor|chatgpt|openai|gemini|codeium|windsurf|devin|aider|tabnine|\bai\b|\[bot\]))|(claude-session:)|(generated (with|by) )|(\bclaude( code)?\b)|(anthropic)|(\bcopilot\b)|(\bcursor (ai|agent|ide)\b)|(\bchatgpt\b)|(noreply@anthropic\.com)|(agent (ia|ai)\b)|(\bai agent\b)'
+# Noms d'outils d'IA, tels qu'ils apparaissent comme auteur ou co-auteur.
+OUTIL='(github )?(claude( code)?|copilot|chatgpt|openai( codex)?|codex|gemini( code assist)?|codeium|windsurf|devin( ai)?|cursor( agent)?|aider|tabnine)'
+# Domaines d'e-mail des éditeurs de ces outils.
+DOMAINE='(anthropic\.com|openai\.com|cursor\.(com|sh)|devin\.ai|cognition\.ai|codeium\.com|windsurf\.com|aider\.chat|tabnine\.com)'
 
-# Motifs refusés dans le nom ou l'e-mail d'auteur et de committer.
-IDENTITE_INTERDITE='(claude|anthropic|copilot|cursor|chatgpt|openai|gemini|codeium|devin|aider)'
+# Motifs refusés dans un message (insensibles à la casse).
+TEXTE_INTERDIT="(co-authored-by:[[:space:]]*${OUTIL}([[:space:]][0-9.]+)?[[:space:]]*<)"
+TEXTE_INTERDIT+="|(co-authored-by:.*@${DOMAINE})"
+TEXTE_INTERDIT+="|(co-authored-by:[^<]*(\[bot\]|\b(ai|ia)\b))"
+TEXTE_INTERDIT+="|(claude-session:)|(noreply@anthropic\.com)|(claude\.(ai/code|com/claude-code))"
+TEXTE_INTERDIT+="|((generated|written|created|made) (with|by|using) \[?${OUTIL}\b)"
+TEXTE_INTERDIT+="|((generated|written|created|made) (with|by|using) an? (ai|llm)\b)"
+TEXTE_INTERDIT+="|((généré|écrit|rédigé|créé|produit)e?s? (avec|par|grâce à) \[?${OUTIL}\b)"
+TEXTE_INTERDIT+="|((généré|écrit|rédigé|créé|produit)e?s? (avec|par|grâce à) (une? )?(ia|llm)\b)"
+
+# Identités refusées, sur des lignes « nom <e-mail> » : nom exactement égal à un outil,
+# e-mail d'un éditeur d'outil, compte bot d'un outil, ou suffixe « (aider) ».
+IDENTITE_INTERDITE="(^${OUTIL}([[:space:]][0-9.]+)?[[:space:]]*<)|(@${DOMAINE}>)|(${OUTIL}[^<]*\[bot\])|(\(aider\))"
 
 verifier_texte() {
   local source="$1" contenu="$2"
   local trouves
   trouves=$(printf '%s\n' "$contenu" | grep -inE "$TEXTE_INTERDIT" || true)
   if [ -n "$trouves" ]; then
-    echo "✗ $source mentionne un outil d'IA :"
+    echo "✗ $source attribue le travail à un outil d'IA :"
     printf '%s\n' "$trouves" | sed 's/^/    /'
     return 1
   fi
 }
 
 if [ "${1:-}" = "--commits" ]; then
-  plage="${2:?plage de commits attendue, par exemple origin/master..HEAD}"
+  shift
+  [ "$#" -gt 0 ] || { echo "Commits à vérifier attendus, par exemple origin/master..HEAD" >&2; exit 2; }
   erreurs=0
   # Les commits du projet d'origine (récupérés lors d'une synchronisation) ne sont pas
   # concernés par la règle : on les exclut si la branche amont est connue localement.
+  # L'exclusion est placée avant les arguments, pour qu'un --not de l'appelant ne l'inverse pas.
   exclure=()
   if git rev-parse -q --verify refs/remotes/upstream/master >/dev/null; then
-    exclure=(--not refs/remotes/upstream/master)
+    exclure=(^refs/remotes/upstream/master)
   fi
-  for sha in $(git rev-list "$plage" "${exclure[@]}"); do
+  # Un échec de rev-list (plage invalide, commit absent) ne doit pas passer pour « rien à vérifier ».
+  if ! commits=$(git rev-list ${exclure[@]+"${exclure[@]}"} "$@"); then
+    echo "✗ Impossible de lister les commits ($*) : vérification interrompue." >&2
+    exit 2
+  fi
+  for sha in $commits; do
     court=$(git rev-parse --short "$sha")
     verifier_texte "Le commit $court" "$(git log -1 --format=%B "$sha")" || erreurs=1
     identites=$(git log -1 --format='%an <%ae>%n%cn <%ce>' "$sha")
@@ -48,9 +74,11 @@ if [ "${1:-}" = "--commits" ]; then
       erreurs=1
     fi
   done
-  [ "$erreurs" -eq 0 ] && echo "✓ Aucune attribution à un outil d'IA dans $plage."
+  [ "$erreurs" -eq 0 ] && echo "✓ Aucune attribution à un outil d'IA dans $*."
   exit "$erreurs"
 fi
 
 fichier="${1:?fichier à vérifier attendu}"
-verifier_texte "Le message" "$(grep -v '^#' "$fichier")"
+# On s'arrête à la ligne de coupe de « git commit -v » : le diff qui suit ne fait pas
+# partie du message. Les lignes de commentaire sont ignorées.
+verifier_texte "Le message" "$(sed '/^# -\{24\} >8 -\{24\}$/,$d' "$fichier" | grep -v '^#' || true)"

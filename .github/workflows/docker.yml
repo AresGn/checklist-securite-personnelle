@@ -24,12 +24,14 @@ on:
     paths:
       - 'web/**'
       - 'personal-security-checklist.yml'
+      - 'personal-security-checklist.fr.yml'
       - 'docker/**'
       - '.github/workflows/docker.yml'
   pull_request:
     paths:
       - 'web/**'
       - 'personal-security-checklist.yml'
+      - 'personal-security-checklist.fr.yml'
       - 'docker/**'
       - '.github/workflows/docker.yml'
   schedule:
