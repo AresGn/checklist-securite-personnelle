@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Refuse un message de commit qui attribue le travail à un outil d'IA.
+# Activation, une fois par clone : make hooks
+exec "$(git rev-parse --show-toplevel)/lib/verifier-attribution.sh" "$1"

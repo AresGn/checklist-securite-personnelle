@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Avant chaque push, vérifie messages et identités des commits envoyés.
+# Activation, une fois par clone : make hooks
+racine="$(git rev-parse --show-toplevel)"
+zero=0000000000000000000000000000000000000000
+while read -r _ref_locale sha_local _ref_distante sha_distant; do
+  [ "$sha_local" = "$zero" ] && continue
+  if [ "$sha_distant" = "$zero" ]; then
+    plage="origin/master..$sha_local"
+  else
+    plage="$sha_distant..$sha_local"
+  fi
+  "$racine/lib/verifier-attribution.sh" --commits "$plage" || exit 1
+done
