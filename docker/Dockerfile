@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/usr/local/share/.cache/yarn,sharing=locked \
 
 # Copy only what the build needs (so no .dockerignore is needed to keep out
 # node_modules, build output or secrets). The checklist data lives in the repo root
-COPY personal-security-checklist.yml /app/
+COPY personal-security-checklist.yml personal-security-checklist.fr.yml /app/
 COPY web/tsconfig.json web/vite.config.mts web/postcss.config.js ./
 COPY web/adapters/static adapters/static
 COPY web/public public

@@ -24,7 +24,7 @@ jobs:
         with:
           script: |
             const CATEGORIES = ['Addition', 'Deletion', 'Amendment', 'Link', 'Web', 'Lib', 'Other'];
-            const CONTENT = /^(personal-security-checklist\.yml|CHECKLIST\.md|articles\/)/;
+            const CONTENT = /^(personal-security-checklist(\.fr)?\.yml|CHECKLIST\.md|articles\/)/;
             const { owner, repo } = context.repo;
             const pr = context.payload.pull_request;
 

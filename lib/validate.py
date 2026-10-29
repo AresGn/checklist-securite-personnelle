@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-yaml_file_path = os.path.join(project_root, 'personal-security-checklist.yml')
+# Fichier à valider : premier argument, sinon la version anglaise d'origine
+yaml_file_path = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(project_root, 'personal-security-checklist.yml')
 schema_file_path = os.path.join(project_root, 'lib', 'schema.json')
 
 # Keys used to name a list entry in error messages, in order of preference

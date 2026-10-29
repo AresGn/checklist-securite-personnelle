@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [ master ]
-    paths: ['personal-security-checklist.yml']
+    paths: ['personal-security-checklist.yml', 'personal-security-checklist.fr.yml']
 
 permissions:
   contents: write
@@ -38,7 +38,9 @@ jobs:
 
       # The make command triggers all the Python scripts, generates output
       - name: Run make command 🔨
-        run: python lib/generate.py
+        run: |
+          python lib/generate.py
+          python lib/generate.py personal-security-checklist.fr.yml CHECKLIST.fr.md
 
       # Commit and push the outputed JSON files
       - name: Commit and push generated files ⤴️
@@ -48,7 +50,7 @@ jobs:
           git config --global user.name "Liss-Bot"
           git config --global user.email "alicia-gh-bot@mail.as93.net"
           git pull origin master
-          git add CHECKLIST.md
+          git add CHECKLIST.md CHECKLIST.fr.md
           if git diff --staged --quiet; then
             echo "Nothin new added, so nothing to commit, exiting..."
           else

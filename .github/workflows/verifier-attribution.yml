@@ -1,0 +1,57 @@
+# Règle du fork : aucun commit ni aucune PR n'attribue le travail à un outil d'IA.
+# Vérifie les messages et identités des commits de la PR, ainsi que son titre et sa description.
+name: 🔏 Attribution des commits
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    name: Aucune attribution à un outil d'IA
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Récupérer le projet d'origine
+        run: git fetch --no-tags https://github.com/Lissy93/personal-security-checklist.git master:refs/remotes/upstream/master
+
+      - name: Commits de la PR
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: lib/verifier-attribution.sh --commits "$BASE..$HEAD"
+
+      - name: Titre et description de la PR
+        if: github.event_name == 'pull_request'
+        env:
+          TITRE: ${{ github.event.pull_request.title }}
+          CORPS: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n\n%s\n' "$TITRE" "$CORPS" > "$RUNNER_TEMP/pr.txt"
+          lib/verifier-attribution.sh "$RUNNER_TEMP/pr.txt"
+
+      - name: Commits poussés sur master
+        if: github.event_name == 'push'
+        env:
+          AVANT: ${{ github.event.before }}
+          APRES: ${{ github.sha }}
+        # Nouvelle branche, ou ancien sommet disparu après un force-push : on vérifie tout
+        # l'historique propre au fork (les commits du projet d'origine sont exclus).
+        run: |
+          if [ "$AVANT" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$AVANT^{commit}" 2>/dev/null; then
+            lib/verifier-attribution.sh --commits "$AVANT..$APRES"
+          else
+            lib/verifier-attribution.sh --commits "$APRES"
+          fi

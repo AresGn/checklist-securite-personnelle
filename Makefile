@@ -5,16 +5,21 @@
 PY := .venv/bin/python
 
 .DEFAULT_GOAL := help
-.PHONY: help validate generate web.dev web.build web.check
+.PHONY: help hooks validate generate web.dev web.build web.check
 
 help: ## List these commands
 	@awk -F':.*## ' '/^[a-z.-]+:.*## /{printf "  make %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+hooks: ## Active les hooks git du fork (règle d'attribution des commits)
+	git config core.hooksPath .githooks
+
 validate: .venv ## Check your checklist edits against lib/schema.json
 	$(PY) lib/validate.py
+	$(PY) lib/validate.py personal-security-checklist.fr.yml
 
-generate: .venv ## Rebuild CHECKLIST.md from the checklist YAML
+generate: .venv ## Rebuild CHECKLIST.md and CHECKLIST.fr.md from the checklist YAML
 	$(PY) lib/generate.py
+	$(PY) lib/generate.py personal-security-checklist.fr.yml CHECKLIST.fr.md
 
 web.dev: web/node_modules ## Run the website locally, with hot reloading
 	cd web && yarn dev

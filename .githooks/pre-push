@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Avant chaque push, vérifie messages et identités des commits envoyés.
+# Activation, une fois par clone : make hooks
+racine="$(git rev-parse --show-toplevel)"
+zero=0000000000000000000000000000000000000000
+while read -r _ref_locale sha_local _ref_distante _sha_distant; do
+  [ "$sha_local" = "$zero" ] && continue
+  # Tous les commits envoyés qui ne sont encore sur aucun dépôt distant connu : couvre
+  # une nouvelle branche, un push normal et un force-push, sans dépendre d'origin/master.
+  "$racine/lib/verifier-attribution.sh" --commits "$sha_local" --not --remotes || exit 1
+done
